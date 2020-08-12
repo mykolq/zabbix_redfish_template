@@ -1,0 +1,917 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.4</version>
+    <date>2020-08-12T13:36:29Z</date>
+    <groups>
+        <group>
+            <name>Templates/Servers Hardware</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template redfish HTTP</template>
+            <name>Template redfish HTTP</name>
+            <groups>
+                <group>
+                    <name>Templates/Servers Hardware</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>CPUs</name>
+                </application>
+                <application>
+                    <name>Memory (RAM)</name>
+                </application>
+                <application>
+                    <name>Power Supplies</name>
+                </application>
+                <application>
+                    <name>Redfish internal items</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>Power consumed watts</name>
+                    <type>DEPENDENT</type>
+                    <key>psu.consumed.watts</key>
+                    <delay>0</delay>
+                    <history>{$PSU_HISTORY_INTERVAL}</history>
+                    <trends>0</trends>
+                    <units>W</units>
+                    <description>Потребляемая мощность. На отдельный бп данные не предоставляются</description>
+                    <applications>
+                        <application>
+                            <name>Power Supplies</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$['body']['PowerControl'][0]['PowerConsumedWatts']</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>redfish.psus.info</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>Chassis URI</name>
+                    <type>DEPENDENT</type>
+                    <key>redfish.chassis.uri</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$['body']['Links']['Chassis'][0][*].first()</params>
+                        </step>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>value = 'https://' + &quot;{$IPMIIP}&quot; + value
+return value</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>redfish.system.info</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{diff()}=1 or {count(#2)}&lt;2</expression>
+                            <recovery_mode>NONE</recovery_mode>
+                            <name>Redfish chassis URI is &quot;{ITEM.VALUE}&quot;</name>
+                            <manual_close>YES</manual_close>
+                            <tags>
+                                <tag>
+                                    <tag>ACTION</tag>
+                                    <value>Change macro value on host</value>
+                                </tag>
+                                <tag>
+                                    <tag>MACRONAME</tag>
+                                    <value>REDFISH_CHASSIS_URI</value>
+                                </tag>
+                                <tag>
+                                    <tag>MACROVALUE</tag>
+                                    <value>{ITEM.VALUE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>NOTIFY</tag>
+                                    <value>NO</value>
+                                </tag>
+                            </tags>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>CPUs collection</name>
+                    <type>HTTP_AGENT</type>
+                    <key>redfish.cpu.collection</key>
+                    <delay>{$OTHER_INFO_INTERVAL}</delay>
+                    <history>{$INTERNAL_ITEMS_HISTORY_PEIOD}</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>BASIC</authtype>
+                    <username>{$IPMIUSER}</username>
+                    <password>{$IPMIPASS}</password>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                    <url>{$REDFISH_SYSTEM_URI}/Processors</url>
+                    <output_format>JSON</output_format>
+                    <verify_host>YES</verify_host>
+                </item>
+                <item>
+                    <name>Memory collection</name>
+                    <type>HTTP_AGENT</type>
+                    <key>redfish.memory.collection</key>
+                    <delay>{$OTHER_INFO_INTERVAL}</delay>
+                    <history>{$INTERNAL_ITEMS_HISTORY_PEIOD}</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>BASIC</authtype>
+                    <username>{$IPMIUSER}</username>
+                    <password>{$IPMIPASS}</password>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                    <url>{$REDFISH_SYSTEM_URI}/Memory</url>
+                    <output_format>JSON</output_format>
+                    <verify_host>YES</verify_host>
+                </item>
+                <item>
+                    <name>Power supply Info</name>
+                    <type>HTTP_AGENT</type>
+                    <key>redfish.psus.info</key>
+                    <delay>{$PSU_INFO_INTERVAL}</delay>
+                    <history>{$INTERNAL_ITEMS_HISTORY_PEIOD}</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>BASIC</authtype>
+                    <username>{$IPMIUSER}</username>
+                    <password>{$IPMIPASS}</password>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                    <url>{$REDFISH_CHASSIS_URI}/Power#/PowerSupplies</url>
+                    <output_format>JSON</output_format>
+                    <verify_host>YES</verify_host>
+                </item>
+                <item>
+                    <name>System info</name>
+                    <type>HTTP_AGENT</type>
+                    <key>redfish.system.info</key>
+                    <delay>{$OTHER_INFO_INTERVAL}</delay>
+                    <history>{$INTERNAL_ITEMS_HISTORY_PEIOD}</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>BASIC</authtype>
+                    <username>{$IPMIUSER}</username>
+                    <password>{$IPMIPASS}</password>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                    <url>{$REDFISH_SYSTEM_URI}</url>
+                    <output_format>JSON</output_format>
+                    <verify_host>YES</verify_host>
+                </item>
+                <item>
+                    <name>System URI</name>
+                    <type>HTTP_AGENT</type>
+                    <key>redfish.system.uri</key>
+                    <delay>{$REDFISH_URI_INFO_INTERVAL}</delay>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>BASIC</authtype>
+                    <username>{$IPMIUSER}</username>
+                    <password>{$IPMIPASS}</password>
+                    <applications>
+                        <application>
+                            <name>Redfish internal items</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$['body']['Members'][0][*].first()</params>
+                        </step>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>value = 'https://' + &quot;{$IPMIIP}&quot; + value
+return value</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED</type>
+                            <params/>
+                        </step>
+                    </preprocessing>
+                    <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                    <url>https://{$IPMIIP}/redfish/v1/Systems/</url>
+                    <output_format>JSON</output_format>
+                    <verify_host>YES</verify_host>
+                    <triggers>
+                        <trigger>
+                            <expression>{diff()}=1 or {count(#2)}&lt;2</expression>
+                            <recovery_mode>NONE</recovery_mode>
+                            <name>Redfish system URI is &quot;{ITEM.VALUE}&quot;</name>
+                            <manual_close>YES</manual_close>
+                            <tags>
+                                <tag>
+                                    <tag>ACTION</tag>
+                                    <value>Change macro value on host</value>
+                                </tag>
+                                <tag>
+                                    <tag>MACRONAME</tag>
+                                    <value>REDFISH_SYSTEM_URI</value>
+                                </tag>
+                                <tag>
+                                    <tag>MACROVALUE</tag>
+                                    <value>{ITEM.VALUE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>NOTIFY</tag>
+                                    <value>NO</value>
+                                </tag>
+                            </tags>
+                        </trigger>
+                    </triggers>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>CPUs</name>
+                    <type>DEPENDENT</type>
+                    <key>redfish.cpu.lld</key>
+                    <delay>0</delay>
+                    <filter>
+                        <conditions>
+                            <condition>
+                                <macro>{#STATE}</macro>
+                                <value>Absent</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>A</formulaid>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>&quot;{#SOCKET}&quot; health</name>
+                            <type>HTTP_AGENT</type>
+                            <key>redfish.cpu.health[&quot;{#SOCKET}&quot;]</key>
+                            <delay>5m</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <authtype>BASIC</authtype>
+                            <username>{$IPMIUSER}</username>
+                            <password>{$IPMIPASS}</password>
+                            <applications>
+                                <application>
+                                    <name>CPUs</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.['Status']['Health']</params>
+                                </step>
+                            </preprocessing>
+                            <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                            <url>{#URI}</url>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{str(OK)}=0</expression>
+                                    <name>&quot;{#SOCKET}&quot; is &quot;{ITEM.LASTVALUE}&quot;</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Redfish CPU health</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <master_item>
+                        <key>redfish.cpu.collection</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#SOCKET}</lld_macro>
+                            <path>$.['Socket']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#STATE}</lld_macro>
+                            <path>$.['State']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#URI}</lld_macro>
+                            <path>$.['Uri']</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var authparams = btoa((&quot;{$IPMIUSER}&quot; + ':' + &quot;{$IPMIPASS}&quot;));
+function reqGet(uri){
+req = new CurlHttpRequest(),
+resp;
+req.AddHeader('Authorization: Basic ' + authparams);
+req.AddHeader('Content-Type: application/json');
+var resp = req.Get(uri);
+return JSON.parse(resp);
+}
+var cpusColl = (JSON.parse(value))['body']['Members'];;
+var prejson = [];
+for (var i = 0; i&lt; cpusColl.length; i++) {
+var cpuInfoObj = {};
+var cpuInfo = reqGet('https://' + &quot;{$IPMIIP}&quot; + cpusColl[i]['@odata.id']);
+cpuInfoObj['Socket'] = cpuInfo['Socket'];
+cpuInfoObj['Model'] = cpuInfo['Model'];
+cpuInfoObj['State'] = cpuInfo['Status']['State'];
+cpuInfoObj['Uri'] = 'https://' + &quot;{$IPMIIP}&quot; + cpusColl[i]['@odata.id'];
+prejson.push(JSON.stringify(cpuInfoObj,null,space=0));
+}
+var json=(&quot;[&quot; + prejson + &quot;]&quot;)
+return json</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <params>3600</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Memory</name>
+                    <type>DEPENDENT</type>
+                    <key>redfish.memory.lld</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Memory slot &quot;{#ID}&quot; all info</name>
+                            <type>HTTP_AGENT</type>
+                            <key>redfish.memory.allinfo[{#ID}]</key>
+                            <delay>5m</delay>
+                            <history>{$INTERNAL_ITEMS_HISTORY_PEIOD}</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <authtype>BASIC</authtype>
+                            <username>{$IPMIUSER}</username>
+                            <password>{$IPMIPASS}</password>
+                            <applications>
+                                <application>
+                                    <name>Redfish internal items</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                                <step>
+                                    <type>NOT_MATCHES_REGEX</type>
+                                    <params>.*&quot;SerialNumber&quot;:null.*</params>
+                                </step>
+                            </preprocessing>
+                            <timeout>{$REDFISH_HTTP_TIMEOUT}</timeout>
+                            <url>{#URI}</url>
+                            <output_format>JSON</output_format>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Memory &quot;{#ID}&quot; state</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.memory.health[{#ID}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Memory (RAM)</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['Status']['Health']</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.memory.allinfo[{#ID}]</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{str(OK)}=0 and {strlen()}&gt;0</expression>
+                                    <name>Memory slot &quot;{#ID}&quot; is &quot;{ITEM.LASTVALUE1}&quot;</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>RAM_MODEL</tag>
+                                            <value>{ITEM.LASTVALUE3}</value>
+                                        </tag>
+                                        <tag>
+                                            <tag>RAM_SN</tag>
+                                            <value>{ITEM.LASTVALUE2}</value>
+                                        </tag>
+                                        <tag>
+                                            <tag>RAM_VENDOR</tag>
+                                            <value>{ITEM.LASTVALUE4}</value>
+                                        </tag>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Redfish RAM health</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Memory &quot;{#ID}&quot; part number</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.memory.pn[{#ID}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Memory (RAM)</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['PartNumber']</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.memory.allinfo[{#ID}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Memory &quot;{#ID}&quot; serial number</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.memory.sn[{#ID}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Memory (RAM)</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['SerialNumber']</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.memory.allinfo[{#ID}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Memory &quot;{#ID}&quot; status</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.memory.state[{#ID}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Memory (RAM)</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['Status']['State']</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.memory.allinfo[{#ID}]</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Memory &quot;{#ID}&quot; vendor</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.memory.vendor[{#ID}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Memory (RAM)</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['VendorID']</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.memory.allinfo[{#ID}]</key>
+                            </master_item>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>{Template redfish HTTP:redfish.memory.state[{#ID}].str(Disabled)}=1 and {Template redfish HTTP:redfish.memory.sn[{#ID}].strlen()}&gt;0</expression>
+                            <name>Memory slot &quot;{#ID}&quot; was disabled</name>
+                            <priority>HIGH</priority>
+                            <tags>
+                                <tag>
+                                    <tag>RAM_SN</tag>
+                                    <value>{ITEM.LASTVALUE2}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <master_item>
+                        <key>redfish.memory.collection</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#ID}</lld_macro>
+                            <path>$.['ID']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#URI}</lld_macro>
+                            <path>$.['URI']</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var memoryColl = (JSON.parse(value))['body']['Members'];
+var prejson = [];
+for (var i = 0; i&lt; memoryColl.length; i++) {
+var memoryUris = {};
+memoryUris['URI'] = 'https://' + &quot;{$IPMIIP}&quot; + memoryColl[i]['@odata.id'];
+memoryUris['ID'] = ((memoryColl[i]['@odata.id']).replace(/(.*\/)*/,&quot;&quot;)).replace(/.*%23DIMM/,&quot;&quot;).replace(/(SLOT)(.*)/, &quot;$1 $2&quot;);
+prejson.push(JSON.stringify(memoryUris,null,space=0));
+}
+var json=(&quot;[&quot; + prejson + &quot;]&quot;)
+return json</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <params>3600</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>PSU</name>
+                    <type>DEPENDENT</type>
+                    <key>redfish.psu.lld</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>Power Supply &quot;{#PSNAME}&quot; health state</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.psu.health[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;]</key>
+                            <delay>0</delay>
+                            <history>{$PSU_HISTORY_INTERVAL}</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Power Supplies</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['PowerSupplies'][{#PSID}]['Status']['Health']</params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.psus.info</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Power Supply &quot;{#PSNAME}&quot; Input Voltage</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.psu.input.voltage[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;]</key>
+                            <delay>0</delay>
+                            <history>{$PSU_HISTORY_INTERVAL}</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Power Supplies</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$['body']['PowerSupplies'][{#PSID}]['LineInputVoltage']</params>
+                                </step>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <params>if (value === '')
+{
+return 0;
+}
+else if (/\d{1,}/.test(value))
+{
+return value;
+}</params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.psus.info</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&gt;={$ACINPUT_HIGH} and {last()}&lt;{$ACINPUT_HIGH_ACHTUNG}</expression>
+                                    <name>Power supply &quot;{#PSNAME}&quot; input voltage is &quot;{ITEM.LASTVALUE}&quot; (Equal or higher than {$ACINPUT_HIGH})</name>
+                                    <priority>AVERAGE</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply voltage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last()}&lt;={$ACINPUT_LOW_ACHTUNG}</expression>
+                                    <name>Power supply &quot;{#PSNAME}&quot; input voltage is &quot;{ITEM.LASTVALUE}&quot; (Equal or lower than {$ACINPUT_LOW_ACHTUNG})</name>
+                                    <priority>HIGH</priority>
+                                    <dependencies>
+                                        <dependency>
+                                            <name>Power supply &quot;{#PSNAME}&quot; cable is switched off! Check cable!</name>
+                                            <expression>{Template redfish HTTP:redfish.psu.state[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].str(No cable)}=1</expression>
+                                        </dependency>
+                                        <dependency>
+                                            <name>Power supply &quot;{#PSNAME}&quot; was detached and absent now!</name>
+                                            <expression>{Template redfish HTTP:redfish.psu.state[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].str(Absent)}=1</expression>
+                                        </dependency>
+                                    </dependencies>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply voltage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>({last()}&gt;{$ACINPUT_LOW_ACHTUNG} and {last()}&lt;={$ACINPUT_LOW})</expression>
+                                    <name>Power supply &quot;{#PSNAME}&quot; input voltage is &quot;{ITEM.LASTVALUE}&quot; (Equal or lower than {$ACINPUT_LOW})</name>
+                                    <priority>AVERAGE</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply voltage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last()}&gt;={$ACINPUT_HIGH_ACHTUNG}</expression>
+                                    <name>Power supply &quot;{#PSNAME}}&quot; input voltage is &quot;{ITEM.LASTVALUE}&quot; (Equal or higher than {$ACINPUT_HIGH_ACHTUNG}))</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply voltage</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Power Supply &quot;{#PSNAME}&quot;  status</name>
+                            <type>DEPENDENT</type>
+                            <key>redfish.psu.state[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;]</key>
+                            <delay>0</delay>
+                            <history>{$PSU_HISTORY_INTERVAL}</history>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Power Supplies</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <params>var psuinfo = (JSON.parse(value))['body']['PowerSupplies'][{#PSID}];
+if (psuinfo['Model'] == '' &amp;&amp;  psuinfo['Status']['State'] == null) {
+return 'Absent';
+}
+else if (psuinfo['Model'] !== '' &amp;&amp;  psuinfo['Status']['State'] == null){
+return 'No cable';
+}
+else if (psuinfo['Model'] !== '' &amp;&amp;  psuinfo['LineInputVoltage'] == null){
+return 'No cable';
+}
+else {
+return psuinfo['Status']['State'];
+}
+
+
+</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>redfish.psus.info</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{str(No cable)}=1</expression>
+                                    <name>Power supply &quot;{#PSNAME}&quot; cable is switched off! Check cable!</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply state</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{str(Absent)}=1</expression>
+                                    <name>Power supply &quot;{#PSNAME}&quot; was detached and absent now!</name>
+                                    <priority>HIGH</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>SOURCE</tag>
+                                            <value>Power Supply state</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>{Template redfish HTTP:redfish.psu.health[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].str(OK)}=0 and {Template redfish HTTP:redfish.psu.state[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].str(Absent)}=0 and {Template redfish HTTP:redfish.psu.input.voltage[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].last()}&gt;0</expression>
+                            <name>Power supply &quot;{#PSNAME}&quot; status is &quot;{ITEM.LASTVALUE}&quot;</name>
+                            <priority>HIGH</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>Power supply &quot;{#PSNAME}&quot; was detached and absent now!</name>
+                                    <expression>{Template redfish HTTP:redfish.psu.state[&quot;{#PSNAME}&quot;, MemberID &quot;{#PSID}&quot;].str(Absent)}=1</expression>
+                                </dependency>
+                            </dependencies>
+                            <tags>
+                                <tag>
+                                    <tag>PSUMODEL</tag>
+                                    <value>{#PSMODEL}</value>
+                                </tag>
+                                <tag>
+                                    <tag>PSUSN</tag>
+                                    <value>{#PSSN}</value>
+                                </tag>
+                                <tag>
+                                    <tag>SOURCE</tag>
+                                    <value>Power Supply state</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <master_item>
+                        <key>redfish.psus.info</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#PSID}</lld_macro>
+                            <path>$.['MemberId']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#PSMODEL}</lld_macro>
+                            <path>$.['Model']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#PSNAME}</lld_macro>
+                            <path>$.['Name']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#PSSN}</lld_macro>
+                            <path>$.['SerialNumber']</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>if (/Redundancy\/iDRAC|DellPowerSupply/gmi.test(value))
+{
+value = JSON.parse(value);
+for (var i = 0; i&lt; (value['body']['PowerSupplies']).length; i++) {
+value['body']['PowerSupplies'][i]['Model'] = 'Dell ' + value['body']['PowerSupplies'][i]['PartNumber'];
+value['body']['PowerSupplies'][i]['Name'] = value['body']['PowerSupplies'][i]['MemberId'];
+value['body']['PowerSupplies'][i]['MemberId'] = i;
+}
+value = JSON.stringify(value);
+}
+return value</params>
+                        </step>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$['body']['PowerSupplies']</params>
+                        </step>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <params>3600</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <tags>
+                <tag>
+                    <tag>APP</tag>
+                    <value>Redfish</value>
+                </tag>
+                <tag>
+                    <tag>IPMI_ADDRESS</tag>
+                    <value>{$IPMIIP}</value>
+                </tag>
+                <tag>
+                    <tag>TEST</tag>
+                    <value>YES</value>
+                </tag>
+            </tags>
+            <macros>
+                <macro>
+                    <macro>{$LLD_THROTTLING_HB_PERIOD}</macro>
+                    <value>3600</value>
+                </macro>
+                <macro>
+                    <macro>{$OTHER_INFO_INTERVAL}</macro>
+                    <value>5m</value>
+                </macro>
+                <macro>
+                    <macro>{$PSU_INFO_INTERVAL}</macro>
+                    <value>1m</value>
+                </macro>
+                <macro>
+                    <macro>{$REDFISH_HTTP_TIMEOUT}</macro>
+                    <value>20</value>
+                </macro>
+                <macro>
+                    <macro>{$REDFISH_URI_INFO_INTERVAL}</macro>
+                    <value>30m</value>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+</zabbix_export>
